@@ -1,0 +1,19 @@
+[project]
+name = "crackedinfo"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "alembic>=1.18.4",
+    "deepagents>=0.6.1",
+    "fastapi[standard]>=0.136.1",
+    "langchain>=1.3.0",
+    "langgraph>=1.2.0",
+    "streamlit>=1.57.0",
+]
+
+[tool.uv.workspace]
+members = [
+    "backend",
+]
