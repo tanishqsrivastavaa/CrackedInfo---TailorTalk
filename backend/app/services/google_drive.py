@@ -51,3 +51,21 @@ def search_by_name(name: str):
     query = f"name contains '{name}'"
     return search_files(query)
 
+
+def search_pdfs(keyword: str):
+    query = (
+        f"name contains '{keyword}' "
+        "and mimeType='application/pdf'"
+    )
+    return search_files(query)
+
+
+
+def search_folders(name: str):
+
+    query = (
+        f"name contains '{name}' "
+        "and mimeType='application/vnd.google-apps.folder'"
+    )
+
+    return search_files(query)
