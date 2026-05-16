@@ -8,7 +8,7 @@ import streamlit as st
 st.set_page_config(page_title="TailorTalk Drive Search", page_icon="🔎", layout="wide")
 st.title("TailorTalk Drive Search")
 
-default_backend = os.getenv("BACKEND_CHAT_URL", "http://127.0.0.1:8000/chat")
+default_backend = os.getenv("BACKEND_CHAT_URL")
 backend_url = st.sidebar.text_input("Backend /chat URL", value=default_backend)
 timeout_seconds = st.sidebar.number_input("Timeout (seconds)", min_value=5, max_value=120, value=30)
 

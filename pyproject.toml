@@ -1,9 +1,9 @@
 [project]
 name = "crackedinfo"
 version = "0.1.0"
-description = "Add your description here"
+description = "tailortalk assignment"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.13,<4.0.0"
 dependencies = [
     "alembic>=1.18.4",
     "deepagents>=0.6.1",
