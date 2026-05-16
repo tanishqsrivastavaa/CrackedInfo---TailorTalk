@@ -1,3 +1,5 @@
+import json
+
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
@@ -14,10 +16,22 @@ class DriveSearchError(Exception):
 
 
 def get_drive_service():
-    creds = service_account.Credentials.from_service_account_file(
-        settings.SERVICE_SECRET,
-        scopes=SCOPES
-    )
+    if settings.GOOGLE_SERVICE_ACCOUNT_JSON.strip():
+        service_account_info = json.loads(settings.GOOGLE_SERVICE_ACCOUNT_JSON)
+        creds = service_account.Credentials.from_service_account_info(
+            service_account_info,
+            scopes=SCOPES,
+        )
+    elif settings.SERVICE_SECRET.strip():
+        creds = service_account.Credentials.from_service_account_file(
+            settings.SERVICE_SECRET,
+            scopes=SCOPES,
+        )
+    else:
+        raise DriveSearchError(
+            "Missing Google credentials. Set GOOGLE_SERVICE_ACCOUNT_JSON (recommended for deployment) "
+            "or SERVICE_SECRET (local file path)."
+        )
 
     return build(
         "drive",
