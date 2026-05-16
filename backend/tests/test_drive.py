@@ -76,6 +76,7 @@ def test_natural_language_recent_and_before_date():
     params = params_from_message("Find recently modified reports before March 8", now=datetime(2026, 5, 16, tzinfo=UTC))
     assert params.modified_after is not None
     assert params.modified_before == datetime(2026, 3, 8, tzinfo=UTC)
+    assert params.name == "report"
 
 
 def test_no_results_response(monkeypatch):
@@ -98,3 +99,22 @@ def test_drive_api_error_behavior(monkeypatch):
     assert result["error"] == "quota exceeded"
     assert result["count"] == 0
     assert result["files"] == []
+
+
+def test_plural_name_fallback_retry(monkeypatch):
+    calls: list[str] = []
+
+    def fake_search_files(query: str, page_size: int = 10, order_by: str = "modifiedTime desc"):
+        calls.append(query)
+        if "name contains 'reports'" in query:
+            return []
+        if "name contains 'report'" in query:
+            return [{"id": "1", "name": "Daily Report.pdf"}]
+        return []
+
+    monkeypatch.setattr("app.services.search_engine.search_files", fake_search_files)
+    result = safe_search_drive(DriveSearchParams(name="reports", folder_id="folder123"))
+    assert result["error"] is None
+    assert result["count"] == 1
+    assert len(calls) == 2
+    assert "name contains 'report'" in result["query"]

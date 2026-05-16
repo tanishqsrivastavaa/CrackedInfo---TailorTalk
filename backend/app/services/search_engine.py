@@ -7,6 +7,53 @@ from app.core.config import settings
 from app.services.google_drive import DriveSearchError, search_files
 from app.services.query_builder import DriveSearchParams, build_drive_query
 
+STOPWORDS = {
+    "find",
+    "show",
+    "search",
+    "for",
+    "the",
+    "file",
+    "files",
+    "containing",
+    "contains",
+    "with",
+    "named",
+    "exact",
+    "recently",
+    "modified",
+    "before",
+    "after",
+    "today",
+    "yesterday",
+    "last",
+    "week",
+    "recent",
+    "or",
+}
+
+
+def _singularize_token(token: str) -> str:
+    if len(token) <= 3:
+        return token
+    if token.endswith("ies") and len(token) > 4:
+        return f"{token[:-3]}y"
+    if token.endswith("sses"):
+        return token[:-2]
+    if token.endswith("s") and not token.endswith("ss"):
+        return token[:-1]
+    return token
+
+
+def _normalize_name_phrase(raw: str) -> str:
+    tokens = re.findall(r"[a-z0-9]+", raw.lower())
+    cleaned: list[str] = []
+    for token in tokens:
+        if token in STOPWORDS:
+            continue
+        cleaned.append(_singularize_token(token))
+    return " ".join(cleaned).strip()
+
 
 def _parse_date_hint(raw: str, now: datetime) -> tuple[datetime | None, datetime | None]:
     text = raw.lower()
@@ -67,12 +114,9 @@ def params_from_message(message: str, now: datetime | None = None) -> DriveSearc
             break
 
     if not name:
-        cleaned = re.sub(
-            r"\b(find|show|search|for|the|files?|file|containing|contains|with|named|exact|recently|modified|before|after|today|yesterday|last week|recent|or)\b",
-            " ",
-            text,
-        )
-        cleaned = " ".join(cleaned.split())
+        cleaned_source = re.sub(r"\bbefore\s+[a-zA-Z]+\s+\d{1,2}(?:,\s*\d{4})?\b", " ", text)
+        cleaned_source = re.sub(r"\bafter\s+[a-zA-Z]+\s+\d{1,2}(?:,\s*\d{4})?\b", " ", cleaned_source)
+        cleaned = _normalize_name_phrase(cleaned_source)
         if cleaned:
             name = cleaned
 
@@ -99,6 +143,13 @@ def search_drive(params: DriveSearchParams):
 def safe_search_drive(params: DriveSearchParams):
     try:
         result = search_drive(params)
+        if result["count"] == 0 and params.name and params.name_match == "contains":
+            fallback_name = _normalize_name_phrase(params.name)
+            if fallback_name and fallback_name != params.name.lower().strip():
+                fallback_params = params.model_copy(update={"name": fallback_name})
+                fallback_result = search_drive(fallback_params)
+                if fallback_result["count"] > 0:
+                    return fallback_result | {"error": None}
         return result | {"error": None}
     except DriveSearchError as exc:
         return {"query": build_drive_query(params), "count": 0, "files": [], "error": str(exc)}

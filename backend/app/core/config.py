@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     #GOOGLE_CLIENT_ID: str = ""
     #GOOGLE_CLIENT_SECRET: str = ""
     GOOGLE_SERVICE_ACCOUNT_JSON: str
-    model_config = SettingsConfigDict(env_file=".env")
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 
 settings = Settings()
